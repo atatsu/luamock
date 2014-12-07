@@ -46,5 +46,48 @@ function Mock:assert_called(n_times)
   end
 end
 
+function Mock:assert_called_once_with(...)
+  if #self._calls < 1 then
+    error("Expected to be called once. Called 0 times.")
+  elseif #self._calls > 1 then
+    error("Expected to be called once. Called " .. #self._calls .. " times.")
+  end
+
+  local expected_args = {...}
+  local actual_args = self._calls[1]
+  local equal = true
+  for i, v in ipairs(expected_args) do
+    if actual_args[i] ~= v then
+      equal = false
+      break
+    end
+  end
+
+  if equal == true then
+    return
+  end
+
+  local err = "Expected call: mock("
+  for i, v in ipairs(expected_args) do
+    local del = i ~= #expected_args and ", " or ""
+    if type(v) == "string" then
+      err = err .. string.format("'%s'%s", v, del)
+    else
+      err = err .. string.format("%s%s", v, del)
+    end
+  end
+  err = err .. ")\nActual call: mock("
+  for i, v in ipairs(actual_args) do
+    local del = i ~= #expected_args and ", " or ""
+    if type(v) == "string" then
+      err = err .. string.format("'%s'%s", v, del)
+    else
+      err = err .. string.format("%s%s", v, del)
+    end
+  end
+  err = err .. ")"
+  error(err)
+end
+
 M.Mock = Mock
 return M

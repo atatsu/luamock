@@ -25,44 +25,69 @@ describe("luamock", function()
     end)
 
     it("should be callable", function()
-      mock()
+      assert.has_no.errors(mock)
     end)
 
-    it("should record that it was called", function()
-      mock()
-      assert.has_no.errors(function() mock:assert_called() end)
+    describe("assert_called", function()
+      it("should record that it was called", function()
+        mock()
+        assert.has_no.errors(function() mock:assert_called() end)
+      end)
+
+      it("should error if it wasn't called", function()
+        assert.has.errors(
+          function() mock:assert_called() end, 
+          "Expected to be called, but wasn't"
+        )
+      end)
+
+      it("should record the exact number of times it was called", function()
+        mock()
+        mock()
+        assert.has_no.errors(function() mock:assert_called(2) end)
+      end)
+
+      it("should error if called wrong number of times", function()
+        mock()
+        mock()
+        --_, err = pcall(function() mock:assert_called(3) end)
+        assert.has.errors(
+          function() mock:assert_called(3) end,
+          "Expected to be called 3 times, but called 2 times"
+        )
+      end)
     end)
 
-    it("should error if it wasn't called", function()
-      assert.has.errors(
-        function() mock:assert_called() end, 
-        "Expected to be called, but wasn't"
-      )
-    end)
+    describe("assert_called_once_with", function()
+      it("should record the args it was called with", function()
+        mock(1, "foo")
+        assert.has_no.errors(function() mock:assert_called_once_with(1, "foo") end)
+      end)
 
-    it("should record the exact number of times it was called", function()
-      mock()
-      mock()
-      assert.has_no.errors(function() mock:assert_called(2) end)
-    end)
+      it("should error if called with unexpected args", function()
+        mock(2, "bar")
+        --_, err = pcall(function() mock:assert_called_once_with(1, "foo") end)
+        assert.has.errors(
+          function() mock:assert_called_once_with(1, "foo") end, 
+          "Expected call: mock(1, 'foo')\nActual call: mock(2, 'bar')"
+        )
+      end)
 
-    it("should error if called wrong number of times", function()
-      mock()
-      mock()
-      --success, err = pcall(function() mock:assert_called(3) end)
-      assert.has.errors(
-        function() mock:assert_called(3) end,
-        "Expected to be called 3 times, but called 2 times"
-      )
-    end)
+      it("should error if called more than once", function()
+        mock()
+        mock()
+        assert.has.errors(
+          function() mock:assert_called_once_with() end,
+          "Expected to be called once. Called 2 times."
+        )
+      end)
 
-    pending("should record the arguments it was called with", function()
-      mock(1, "foo")
-    end)
-
-    pending("should allow any call to be made on it", function()
-      mock.random_method()
-      mock:random_method_again()
+      it("should error if called less than once", function()
+        assert.has.errors(
+          function() mock:assert_called_once_with() end,
+          "Expected to be called once. Called 0 times."
+        )
+      end)
     end)
   end)
 end)
