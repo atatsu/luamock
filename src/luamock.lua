@@ -29,8 +29,20 @@ function Mock.new()
 end
 
 function Mock:assert_called(n_times)
-  if #self._calls < 1 then
-    error("Expected to be called, but wasn't")
+  if n_times == nil then
+    if #self._calls < 1 then
+      error("Expected to be called, but wasn't")
+    end
+    return
+  end
+
+  if n_times ~= #self._calls then
+    local err = string.format(
+      "Expected to be called %s times, but called %s times", 
+      n_times, 
+      #self._calls
+    )
+    error(err)
   end
 end
 

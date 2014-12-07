@@ -34,14 +34,26 @@ describe("luamock", function()
     end)
 
     it("should error if it wasn't called", function()
-      assert.has.errors(function() mock:assert_called() end, "Expected to be called, but wasn't")
+      assert.has.errors(
+        function() mock:assert_called() end, 
+        "Expected to be called, but wasn't"
+      )
     end)
 
-    pending("should record the exact number of times it was called", function()
+    it("should record the exact number of times it was called", function()
       mock()
       mock()
-      assert.is_true(mock:assert_called(2))
+      assert.has_no.errors(function() mock:assert_called(2) end)
+    end)
 
+    it("should error if called wrong number of times", function()
+      mock()
+      mock()
+      --success, err = pcall(function() mock:assert_called(3) end)
+      assert.has.errors(
+        function() mock:assert_called(3) end,
+        "Expected to be called 3 times, but called 2 times"
+      )
     end)
 
     pending("should record the arguments it was called with", function()
