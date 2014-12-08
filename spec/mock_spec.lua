@@ -3,7 +3,7 @@ describe("luamock", function()
   local luamock
 
   setup(function()
-    luamock = require("src/luamock")
+    luamock = require("src/init")
   end)
 
   teardown(function()
@@ -59,6 +59,7 @@ describe("luamock", function()
     end)
 
     describe("assert_called_once_with", function()
+
       it("should record the args it was called with", function()
         mock(1, "foo")
         assert.has_no.errors(function() mock:assert_called_once_with(1, "foo") end)
@@ -88,6 +89,63 @@ describe("luamock", function()
           "Expected to be called once. Called 0 times."
         )
       end)
+
+      it("should handle nil", function()
+        mock(1, nil, 3)
+        assert.has_no.errors(
+          function() mock:assert_called_once_with(1, nil, 3) end
+        )
+      end)
+
+      it("should error if nil expected but not in actual call", function()
+        local expected_err = "Expected call: mock('foo', nil, 'bar')\nActual call: mock('foo', 'bar')"
+        mock("foo", "bar")
+        local check = function() mock:assert_called_once_with("foo", nil, "bar") end
+        --_, err = pcall(check)
+        assert.has.errors(
+          check,
+          expected_err
+        )
+      end)
+
+      it("should error if nil expected but not in actual call (equal arg numbers)", function()
+        local expected_err = "Expected call: mock('foo', nil, 'bar')\nActual call: mock('foo', 4, 'bar')"
+        mock("foo", 4, "bar")
+        local check = function() mock:assert_called_once_with("foo", nil, "bar") end
+        --_, err = pcall(check)
+        assert.has.errors(
+          check,
+          expected_err
+        )
+      end)
+
+      pending("should handle tables", function()
+
+      end)
+
+      pending("should throw an error if tables are not the same", function()
+      end)
+
+    end)
+
+    describe("assert_any_call", function()
+
+      pending("should not care about call order", function()
+        mock(1, 2, 3)
+        mock("foo", "bar")
+        mock(true, false)
+        assert.has_no.errors(function() mock:assert_any_call("foo", "bar") end)
+      end)
+
+      pending("should error if supplied call never happened", function()
+        mock("a", 1)
+        mock("b", 2)
+        assert.has.errors(
+          function() mock:assert_any_call("c", 3) end,
+          "mock('c', 3) call not found"
+        )
+      end)
+
     end)
   end)
 end)

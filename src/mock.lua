@@ -1,11 +1,6 @@
-local M = {}
-
-M._COPYRIGHT = "Copyright (c) 2014 Nathan Lundquist"
-M._DESCRIPTION = ""
-M._VERSION = "0.1.0"
+local util = require("util")
 
 local Mock = {}
---Mock.__index = Mock
 
 setmetatable(Mock, {
   __call = function(cls, ...)
@@ -15,7 +10,7 @@ setmetatable(Mock, {
 
 local mock_mt = {
   __call = function(self, ...)
-    local args = {...}
+    local args = {n = select("#", ...), ...}
     self._calls[#self._calls + 1] = args
   end,
   __index = Mock,
@@ -53,41 +48,31 @@ function Mock:assert_called_once_with(...)
     error("Expected to be called once. Called " .. #self._calls .. " times.")
   end
 
-  local expected_args = {...}
+  local err_msg = "Expected call: mock(%s)\nActual call: mock(%s)"
+
+  local expected_args = {n = select("#", ...), ...}
   local actual_args = self._calls[1]
-  local equal = true
-  for i, v in ipairs(expected_args) do
-    if actual_args[i] ~= v then
-      equal = false
-      break
-    end
+
+  if expected_args.n ~= actual_args.n then
+    error(string.format(
+      err_msg, 
+      util.format_argument_list(unpack(expected_args)), 
+      util.format_argument_list(unpack(actual_args))
+    ))
   end
 
-  if equal == true then
-    return
-  end
-
-  local err = "Expected call: mock("
-  for i, v in ipairs(expected_args) do
-    local del = i ~= #expected_args and ", " or ""
-    if type(v) == "string" then
-      err = err .. string.format("'%s'%s", v, del)
-    else
-      err = err .. string.format("%s%s", v, del)
+  for i = 1, expected_args.n, 1 do
+    if expected_args[i] ~= actual_args[i] then
+      error(string.format(
+        err_msg,
+        util.format_argument_list(unpack(expected_args)),
+        util.format_argument_list(unpack(actual_args))
+      ))
     end
   end
-  err = err .. ")\nActual call: mock("
-  for i, v in ipairs(actual_args) do
-    local del = i ~= #expected_args and ", " or ""
-    if type(v) == "string" then
-      err = err .. string.format("'%s'%s", v, del)
-    else
-      err = err .. string.format("%s%s", v, del)
-    end
-  end
-  err = err .. ")"
-  error(err)
 end
 
-M.Mock = Mock
-return M
+function Mock:assert_any_call(...)
+end
+
+return Mock
