@@ -32,6 +32,13 @@ describe("luamock.util", function()
       assert.is_false(util.table_compare(5, {}))
     end)
 
+    it("should throw an error if at least one argument isn't a table", function()
+      assert.has.errors(
+        function() util.table_compare(nil, nil) end,
+        "Expected at least one table, got nil and nil"
+      )
+    end)
+
     describe("when used with simple array-like tables", function()
 
       local simple_array
@@ -218,11 +225,31 @@ describe("luamock.util", function()
       end)
 
       it("metamethods should be ignored", function()
-        --local other = {a = 5, c = 7, {7, 20, "d"}, foo = "bar", bar = "baz"}
         local other_mt = {__index = {foo = "bar", bar = "baz"}}
         local other = setmetatable({a = 5, c = 7, {7, 20, "d"}}, other_mt)
         assert.is_true(util.table_compare(control, other))
         assert.is_true(util.table_compare(other, control))
+      end)
+
+      it("__eq should be used if present on either side", function()
+        local mt = {__eq = function(lhs, rhs) return true end }
+        local t1 = setmetatable({thiskey = "not in other"}, mt)
+        local t2 = setmetatable({anotherkey = "still not in other"}, mt)
+        assert.is_true(util.table_compare(t1, t2))
+      end)
+
+      it("should be able to provide override __eq", function()
+        local other = {more = "stuff"}
+        local eq_override = function(rhs, lhs) return true end
+        assert.is_true(util.table_compare(control, other, eq_override))
+      end)
+
+      it("should error if override __eq is not a function", function()
+        local other = {more = "stuff"}
+        assert.has.errors(
+          function() util.table_compare(control, other, 5) end,
+          "Expected function for eq_override, got number"
+        )
       end)
 
     end)

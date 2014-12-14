@@ -17,10 +17,42 @@ function M.format_argument_list(...)
   return output
 end
 
-function M.table_compare(t1, t2)
-  local base_t1, base_t2 = t1, t2
-  if type(t1) ~= type(t2) then return false end
+function M.table_compare(base1, base2, eq_override)
+  local type1, type2 = type(base1), type(base2)
+  local t1, t2
 
+  -- ensure at least one argument is a table
+  if type1 ~= "table" and type2 ~= "table" then
+    error(string.format("Expected at least one table, got %s and %s", type1, type2))
+  end
+
+  if type1 ~= type2 then return false end
+
+  -- apply `eq_override` if one is supplied
+  if eq_override then
+    if type(eq_override) ~= "function" then 
+      error(string.format("Expected function for eq_override, got %s", type(eq_override)))
+    end
+    local mt = {__eq = eq_override}
+    t1 = setmetatable(base1, mt)
+    t2 = setmetatable(base2, mt)
+    return t1 == t2
+  end
+
+  -- check if either object has __eq defined and if so let that handle
+  -- the equality check
+  t1 = base1
+  while t1 do
+    if t1.__eq then return base1 == base2 end
+    t1 = getmetatable(t1)
+  end
+  t2 = base2
+  while t2 do
+    if t2.__eq then return base2 == base1 end
+    t2 = getmetatable(t2)
+  end
+     
+  t1, t2 = base1, base2
   while t1 do
     for k, v in pairs(t1) do
       local skip_meta
@@ -45,7 +77,7 @@ function M.table_compare(t1, t2)
     t1 = getmetatable(t1)
   end
 
-  t1 = base_t1
+  t1 = base1
 
   while t2 do
     for k, v in pairs(t2) do
